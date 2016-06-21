@@ -9,7 +9,7 @@ namespace ARQ
 {
     class Program
     {
-        static int sf, sn, rn, sw, dataLength;
+        static int sf, sn, rn, ss, sw, dataLength;
         static ConcurrentQueue<int> stor = new ConcurrentQueue<int>();
         static ConcurrentQueue<int> rtos = new ConcurrentQueue<int>();
         static string MutexName = "fpcsong";
@@ -18,7 +18,7 @@ namespace ARQ
         static void Main(string[] args)
         {
             Console.SetWindowSize(160, 50);
-            sf = sn = rn = 0;
+            sf = sn = rn = ss = 0;
             dataLength = 16;
             Console.WriteLine("Please input the window size of protocol and then maxmize the window to see the result:");
             while ((false == int.TryParse(Console.ReadLine(), out sw) || (sw > 15 || sw < 1))) { };
@@ -86,10 +86,15 @@ namespace ARQ
         {
             while (true)
             {
-                while (sn - sf >= sw) { };
-                stor.Enqueue(sn);
-                Interlocked.Increment(ref sn);
-                draw(sf, sn, rn, "Send msg " + (sn - 1).ToString());
+                while (ss - sf >= sw) { };
+
+                stor.Enqueue(ss);
+                Interlocked.Increment(ref ss);
+                if (ss > sn)
+                {
+                    Interlocked.Add(ref sn, ss - sn);
+                }
+                draw(sf, sn, rn, "Send msg " + (ss - 1).ToString());
                 if (sn == 16)
                 {
                     draw(sf, sn, rn, "Send completed");
@@ -109,7 +114,7 @@ namespace ARQ
                 while (false == rtos.TryDequeue(out ack)) { };
                 if (ack == 110)
                 {
-                    Interlocked.Add(ref sn, sf - sn);
+                    Interlocked.Add(ref ss, sf - ss);
                     draw(sf, sn, rn, "ack" + (sf + 1).ToString() + " missed,timeout");
                 }
                 else
